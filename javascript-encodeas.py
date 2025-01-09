@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import sys
 import string
-from burp import IBurpExtender, IContextMenuFactory
+from burp import IBurpExtender, IContextMenuFactory, IContextMenuInvocation
 from java.util import ArrayList
 from javax.swing import JMenuItem
 
@@ -22,14 +22,23 @@ class BurpExtender(IBurpExtender, IContextMenuFactory):
 
     def createMenuItems(self, invocation):
         self.context = invocation
+        if invocation.getInvocationContext() in [IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST, IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_RESPONSE]:
+            bounds = self.context.getSelectionBounds()
+            start, end = bounds[0], bounds[1]
+            if end - start == 0:
+                enable_menu_items = False
+            else:
+                enable_menu_items = True
+            return self.create_menu_list(enable=enable_menu_items)
+       
+    def create_menu_list(self, enable):
         menu_list = ArrayList()
-        menu_list.add(JMenuItem("Unicode Encode Non-Alpha (\\u0061abcd)", actionPerformed=self.encode_unicode_non_alpha))
-        menu_list.add(JMenuItem("Unicode Encode All Characters (\\u0061)", actionPerformed=self.encode_unicode_all))
-        menu_list.add(JMenuItem("Unicode Aware Encode Non-Alpha (\\u{61}abcd)", actionPerformed=self.encode_unicode_aware_non_alpha))
-        menu_list.add(JMenuItem("Unicode Aware Encode All Characters (\\u{61})", actionPerformed=self.encode_unicode_aware_all))
-        menu_list.add(JMenuItem("Hex Encode Non-Alpha (\\x61abcd)", actionPerformed=self.encode_hex_non_alpha))        
-        menu_list.add(JMenuItem("Hex Encode All Characters (\\x61)", actionPerformed=self.encode_hex_all))
-
+        menu_list.add(JMenuItem("Unicode Encode Non-Alpha (\\u0061abcd)", enabled=enable, actionPerformed=self.encode_unicode_non_alpha))
+        menu_list.add(JMenuItem("Unicode Encode All Characters (\\u0061)", enabled=enable,actionPerformed=self.encode_unicode_all))
+        menu_list.add(JMenuItem("Unicode Aware Encode Non-Alpha (\\u{61}abcd)", enabled=enable,actionPerformed=self.encode_unicode_aware_non_alpha))
+        menu_list.add(JMenuItem("Unicode Aware Encode All Characters (\\u{61})", enabled=enable,actionPerformed=self.encode_unicode_aware_all))
+        menu_list.add(JMenuItem("Hex Encode Non-Alpha (\\x61abcd)", enabled=enable,actionPerformed=self.encode_hex_non_alpha))        
+        menu_list.add(JMenuItem("Hex Encode All Characters (\\x61)", enabled=enable, actionPerformed=self.encode_hex_all))
         return menu_list
 
     def encode_hex(self, event, allChars):
